@@ -33,6 +33,7 @@ const WalletConnect: React.FC = () => {
   const [amount, setAmount] = useState<string>('');
   const [txHash, setTxHash] = useState<string>('');
   const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
+  const [isZkVerifyHelpOpen, setIsZkVerifyHelpOpen] = useState<boolean>(false);
   const [walletState, setWalletState] = useState<WalletState>({
     zkVerify: { accounts: [], account: null, balance: '0', isConnected: false, error: '' },
     ethereum: { address: '', isConnected: false, error: '' },
@@ -250,11 +251,6 @@ const WalletConnect: React.FC = () => {
               <button onClick={() => handleDisconnect(type)} className="disconnect-button-small">
                 Disconnect
               </button>
-              {type === 'ethereum' && (
-                <button onClick={() => setIsTutorialOpen(true)} className="link-button">
-                  How to see tVFY on MetaMask?
-                </button>
-              )}
             </div>
           ) : (
             <button onClick={connectFn} disabled={isLoading} className="connect-button">
@@ -262,6 +258,18 @@ const WalletConnect: React.FC = () => {
             </button>
           )}
           {state.error && <div className="panel-error">{state.error}</div>}
+        </div>
+        <div className="panel-footer">
+          {type === 'zkVerify' && (
+            <button onClick={() => setIsZkVerifyHelpOpen(true)} className="link-button">
+              I don't see the account I want to use
+            </button>
+          )}
+          {type === 'ethereum' && (
+            <button onClick={() => setIsTutorialOpen(true)} className="link-button">
+              How to see tVFY on MetaMask?
+            </button>
+          )}
         </div>
       </div>
     );
@@ -272,7 +280,7 @@ const WalletConnect: React.FC = () => {
       <div className="bridge-container">
         <h1>zkVerify Teleporter</h1>
         <div className="bridge-main">
-          {renderWalletPanel('zkVerify', 'zkVerify', <img src={zkVerifyLogo} alt="zkVerify Logo" className="logo-img" />, walletState.zkVerify, connectToZkVerify)}
+          {renderWalletPanel('zkVerify', 'zkVerify Volta', <img src={zkVerifyLogo} alt="zkVerify Logo" className="logo-img" />, walletState.zkVerify, connectToZkVerify)}
           
           <div className="bridge-arrow">→</div>
 
@@ -361,6 +369,29 @@ const WalletConnect: React.FC = () => {
                 <li>The token symbol and decimals should fill in automatically. If not, please enter <strong>tVFY</strong> as the symbol and <strong>18</strong> as the decimals.</li>
                 <li>Click "Add custom token" and then "Import tokens".</li>
               </ol>
+            </div>
+          </div>
+        </div>
+      )}
+      {isZkVerifyHelpOpen && (
+        <div className="tutorial-modal-backdrop" onClick={() => setIsZkVerifyHelpOpen(false)}>
+          <div className="tutorial-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setIsZkVerifyHelpOpen(false)} className="close-button">×</button>
+            <div className="tutorial-panel">
+              <h2>Can't Find Your Account?</h2>
+              <p>
+                If you've already connected your wallet and want to use a different account, you first need to revoke the website's permissions from your wallet extension.
+              </p>
+              <p>
+                <strong>For Polkadot-based wallets (like Talisman or Polkadot.js):</strong>
+              </p>
+              <ol>
+                <li>Open your wallet extension.</li>
+                <li>Navigate to the "Connected Dapps" or "Manage Website Access" section (this is often under Settings ⚙️).</li>
+                <li>Find this website in the list and click "Forget" or "Revoke".</li>
+                <li>Return to this page and click "Connect Wallet" again. You will be prompted to select your accounts.</li>
+              </ol>
+              <p>This process ensures that you can grant permissions for the accounts you wish to use.</p>
             </div>
           </div>
         </div>

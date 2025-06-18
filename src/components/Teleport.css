@@ -72,6 +72,11 @@ body {
   padding-top: 1rem;
 }
 
+.panel-footer {
+  text-align: center;
+  padding-top: 1rem;
+}
+
 /* Connection Details */
 .connection-details {
   width: 100%;
