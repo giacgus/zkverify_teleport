@@ -49,3 +49,22 @@
 main {
   padding: 2rem;
 }
+
+.tools-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tool-section {
+  flex: 1;
+}
+
+@media (min-width: 1024px) {
+  .tools-container {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}

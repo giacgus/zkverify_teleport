@@ -1,141 +1,272 @@
 import React, { useState, useEffect } from 'react';
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
 import { WalletService } from '../services/wallet';
-import './WalletConnect.css';
+import { EthereumService } from '../services/ethereum';
+import { TeleportService, TeleportParams } from '../services/teleport';
+import './Teleport.css';
+import zkVerifyLogo from '../assets/zkverify_logo.png';
+import { ReactComponent as EthereumLogo } from '../assets/ethereum_logo.svg';
+
+// Sepolia testnet configuration
+const SEPOLIA_CONFIG = {
+  chainId: 11155111,
+};
+
+interface WalletState {
+  zkVerify: {
+    accounts: InjectedAccountWithMeta[];
+    account: InjectedAccountWithMeta | null;
+    isConnected: boolean;
+    error: string;
+  };
+  ethereum: {
+    address: string;
+    isConnected: boolean;
+    error: string;
+  };
+}
 
 const WalletConnect: React.FC = () => {
-  const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<InjectedAccountWithMeta | null>(null);
-  const [remark, setRemark] = useState<string>('');
-  const [status, setStatus] = useState<string>('');
-  const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isWalletConnected, setIsWalletConnected] = useState<boolean>(false);
+  const [status, setStatus] = useState<string>('');
+  const [amount, setAmount] = useState<string>('');
+  const [txHash, setTxHash] = useState<string>('');
+  const [walletState, setWalletState] = useState<WalletState>({
+    zkVerify: { accounts: [], account: null, isConnected: false, error: '' },
+    ethereum: { address: '', isConnected: false, error: '' },
+  });
 
   useEffect(() => {
-    checkWalletConnection();
-  }, []);
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts.length > 0 && walletState.ethereum.isConnected) {
+        setWalletState(prev => ({
+          ...prev,
+          ethereum: { ...prev.ethereum, address: accounts[0] }
+        }));
+      } else {
+        // If accounts is empty, it means the user disconnected all accounts
+        handleDisconnect('ethereum');
+      }
+    };
 
-  const checkWalletConnection = async () => {
+    const ethereum = (window as any).ethereum;
+    if (ethereum && ethereum.isMetaMask) {
+      ethereum.on('accountsChanged', handleAccountsChanged);
+    }
+
+    return () => {
+      if (ethereum && ethereum.isMetaMask) {
+        ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      }
+    };
+  }, [walletState.ethereum.isConnected]);
+
+  const connectToZkVerify = async () => {
+    setIsLoading(true);
+    setStatus('');
     try {
       await WalletService.checkWalletInstalled();
-      setIsWalletConnected(true);
-      setError('');
-      // Don't automatically connect, wait for user to click the button
+      const accounts = await WalletService.getAccounts();
+      if (accounts.length > 0) {
+        setWalletState(prev => ({
+          ...prev,
+          zkVerify: {
+            accounts: accounts,
+            account: accounts[0],
+            isConnected: true,
+            error: ''
+          }
+        }));
+      }
     } catch (error: any) {
-      setError(error.message);
-      setIsWalletConnected(false);
-    }
-  };
-
-  const connectWallet = async () => {
-    try {
-      setStatus('Connecting to wallet...');
-      setError('');
-      setIsLoading(true);
-      
-      const walletAccounts = await WalletService.getAccounts();
-      setAccounts(walletAccounts);
-      setStatus(`Connected with ${walletAccounts.length} account${walletAccounts.length !== 1 ? 's' : ''}`);
-    } catch (error: any) {
-      console.error('Error connecting wallet:', error);
-      setError(error.message);
-      setStatus('Failed to connect wallet');
+      setWalletState(prev => ({ ...prev, zkVerify: { ...prev.zkVerify, error: error.message } }));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAccountChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = accounts.find(acc => acc.address === event.target.value);
-    setSelectedAccount(selected || null);
+  const connectToEthereum = async () => {
+    setIsLoading(true);
+    setStatus('');
+    try {
+      const address = await EthereumService.connectToSepolia();
+      setWalletState(prev => ({ ...prev, ethereum: { address, isConnected: true, error: '' } }));
+    } catch (error: any) {
+      setWalletState(prev => ({ ...prev, ethereum: { ...prev.ethereum, error: error.message } }));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRemarkChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setRemark(event.target.value);
+  const handleDisconnect = (walletType: 'zkVerify' | 'ethereum') => {
+    if (walletType === 'zkVerify') {
+      setWalletState(prev => ({
+        ...prev,
+        zkVerify: {
+          accounts: [],
+          account: null,
+          isConnected: false,
+          error: '',
+        }
+      }));
+    } else {
+      setWalletState(prev => ({
+        ...prev,
+        ethereum: {
+          address: '',
+          isConnected: false,
+          error: '',
+        }
+      }));
+    }
+    setStatus('');
+    setTxHash('');
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleZkVerifyAccountChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedAddress = event.target.value;
+    const selectedAccount = walletState.zkVerify.accounts.find(acc => acc.address === selectedAddress);
+    if (selectedAccount) {
+      setWalletState(prev => ({
+        ...prev,
+        zkVerify: { ...prev.zkVerify, account: selectedAccount }
+      }));
+    }
+  };
+
+  const handleTeleport = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedAccount || !remark.trim()) {
-      setError('Please select an account and enter a remark');
+    const { zkVerify, ethereum } = walletState;
+    if (!zkVerify.account || !ethereum.address || !amount) {
+      setStatus('Please connect both wallets and enter an amount.');
       return;
     }
 
     setIsLoading(true);
-    setStatus('Waiting for wallet signature...');
-    setError('');
+    setStatus('Preparing teleport transaction...');
+    setTxHash('');
 
     try {
-      const hash = await WalletService.sendRemark(selectedAccount, remark);
-      setStatus(`Transaction submitted! Hash: ${hash}`);
-      setRemark('');
+      const api = await WalletService.connectApi();
+      const params: TeleportParams = {
+        assetId: 0,
+        destination: 'Evm',
+        chainId: SEPOLIA_CONFIG.chainId,
+        recipient: ethereum.address,
+        amount: TeleportService.formatAmount(amount),
+        timeout: 0,
+        relayerFee: '0',
+        redeem: false,
+      };
+
+      setStatus('Waiting for wallet signature...');
+      const hash = await TeleportService.teleportToEvm(api, zkVerify.account, params);
+      setStatus('Teleport transaction submitted!');
+      setTxHash(hash);
+      setAmount('');
     } catch (error: any) {
-      console.error('Error sending remark:', error);
-      setError(error.message);
-      setStatus('Failed to send remark');
+      console.error('Error teleporting tokens:', error);
+      setStatus(`Error: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const renderWalletPanel = (
+    type: 'zkVerify' | 'ethereum',
+    title: string,
+    logo: React.ReactNode,
+    state: any,
+    connectFn: () => void
+  ) => {
+    const isConnected = state.isConnected;
+
+    return (
+      <div className="bridge-panel">
+        <div className="panel-header">
+          {logo}
+          <span>{title}</span>
+        </div>
+        <div className="panel-body">
+          {isConnected ? (
+            <div className="connection-details">
+              {type === 'zkVerify' && state.accounts.length > 1 ? (
+                <div className="form-group">
+                  <select
+                    value={state.account?.address || ''}
+                    onChange={handleZkVerifyAccountChange}
+                    className="account-select"
+                  >
+                    {state.accounts.map((acc: InjectedAccountWithMeta) => (
+                      <option key={acc.address} value={acc.address}>
+                        {acc.meta.name} ({acc.address.slice(0, 6)}...{acc.address.slice(-6)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="address-display">
+                  {type === 'zkVerify'
+                    ? `${state.account.meta.name} (${state.account.address.slice(0, 6)}...${state.account.address.slice(-6)})`
+                    : `${state.address.slice(0, 6)}...${state.address.slice(-6)}`}
+                </div>
+              )}
+              <button onClick={() => handleDisconnect(type)} className="disconnect-button-small">
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button onClick={connectFn} disabled={isLoading} className="connect-button">
+              {isLoading ? 'Connecting...' : 'Connect Wallet'}
+            </button>
+          )}
+          {state.error && <div className="panel-error">{state.error}</div>}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="wallet-connect">
-      <h2>Wallet Connection</h2>
-      
-      {error && <div className="error-message">{error}</div>}
-      
-      <div className="wallet-status">
-        <p>{status}</p>
-        {!accounts.length && (
-          <button 
-            onClick={connectWallet} 
-            disabled={isLoading || !isWalletConnected}
-            className={!isWalletConnected ? 'button-warning' : ''}
-          >
-            {!isWalletConnected 
-              ? 'Please Install Polkadot Wallet' 
-              : isLoading 
-                ? 'Connecting...' 
-                : 'Connect Wallet'}
-          </button>
-        )}
+    <div className="bridge-container">
+      <h1>zkVerify Teleporter</h1>
+      <div className="bridge-main">
+        {renderWalletPanel('zkVerify', 'zkVerify', <img src={zkVerifyLogo} alt="zkVerify Logo" className="logo-img" />, walletState.zkVerify, connectToZkVerify)}
+        
+        <div className="bridge-arrow">→</div>
+
+        {renderWalletPanel('ethereum', 'Ethereum Sepolia', <EthereumLogo />, walletState.ethereum, connectToEthereum)}
       </div>
 
-      {accounts.length > 0 && (
-        <form onSubmit={handleSubmit} className="remark-form">
-          <div className="form-group">
-            <label htmlFor="account">Select Account:</label>
-            <select
-              id="account"
-              onChange={handleAccountChange}
-              value={selectedAccount?.address || ''}
-              required
-            >
-              <option value="">Select an account</option>
-              {accounts.map((account) => (
-                <option key={account.address} value={account.address}>
-                  {account.meta.name} ({account.address.slice(0, 6)}...{account.address.slice(-6)})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="remark">Remark:</label>
-            <textarea
-              id="remark"
-              value={remark}
-              onChange={handleRemarkChange}
-              placeholder="Enter your remark..."
+      {walletState.zkVerify.isConnected && walletState.ethereum.isConnected && (
+        <div className="teleport-controls">
+          <div className="form-group amount-group">
+            <label htmlFor="amount">Amount to Teleport</label>
+            <input
+              type="text"
+              id="amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.0"
+              pattern="[0-9]*\.?[0-9]*"
               required
             />
+            <span>tVFY</span>
           </div>
-
-          <button type="submit" disabled={isLoading || !selectedAccount}>
-            {isLoading ? 'Waiting for wallet...' : 'Send Remark'}
+          <button onClick={handleTeleport} disabled={isLoading || !amount} className="teleport-button">
+            {isLoading ? 'Processing...' : 'Teleport'}
           </button>
-        </form>
+        </div>
+      )}
+
+      {(status || txHash) && (
+        <div className="status-section">
+          <p>{status}</p>
+          {txHash && (
+            <a href={`https://zkverify-testnet.subscan.io/extrinsic/${txHash}`} target="_blank" rel="noopener noreferrer">
+              View Transaction
+            </a>
+          )}
+        </div>
       )}
     </div>
   );
