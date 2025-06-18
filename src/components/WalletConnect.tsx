@@ -128,6 +128,7 @@ const WalletConnect: React.FC = () => {
 
   const handleDisconnect = (walletType: 'zkVerify' | 'ethereum') => {
     if (walletType === 'zkVerify') {
+      WalletService.disconnect();
       setWalletState(prev => ({
         ...prev,
         zkVerify: {
@@ -139,6 +140,7 @@ const WalletConnect: React.FC = () => {
         }
       }));
     } else {
+      EthereumService.disconnect();
       setWalletState(prev => ({
         ...prev,
         ethereum: {

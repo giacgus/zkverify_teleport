@@ -4,6 +4,11 @@ export class EthereumService {
   private static provider: ethers.BrowserProvider | null = null;
   private static signer: ethers.JsonRpcSigner | null = null;
 
+  static disconnect() {
+    this.provider = null;
+    this.signer = null;
+  }
+
   static async checkMetaMaskInstalled(): Promise<boolean> {
     const ethereum = (window as any).ethereum;
     if (!ethereum || !ethereum.isMetaMask) {

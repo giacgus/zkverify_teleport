@@ -21,12 +21,18 @@ export class WalletService {
     return this.api;
   }
 
-  static async checkWalletInstalled(): Promise<boolean> {
-    const injectedWindow = window as any;
-    if (!injectedWindow.injectedWeb3 || Object.keys(injectedWindow.injectedWeb3).length === 0) {
+  static async disconnect() {
+    if (this.api) {
+      await this.api.disconnect();
+      this.api = null;
+    }
+  }
+
+  static async checkWalletInstalled(): Promise<void> {
+    const extensions = await web3Enable('zkverify-teleporter-dapp');
+    if (!extensions || extensions.length === 0) {
       throw new Error('No Substrate wallet found. Please install a compatible wallet like Talisman or SubWallet.');
     }
-    return true;
   }
 
   static async getAccounts(): Promise<InjectedAccountWithMeta[]> {
