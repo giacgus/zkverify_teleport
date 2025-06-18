@@ -22,10 +22,9 @@ export class WalletService {
   }
 
   static async checkWalletInstalled(): Promise<boolean> {
-    // Check specifically for Talisman
     const injectedWindow = window as any;
-    if (!injectedWindow.injectedWeb3 || !injectedWindow.injectedWeb3['talisman']) {
-      throw new Error('Talisman wallet not found. Please install Talisman from https://www.talisman.xyz/');
+    if (!injectedWindow.injectedWeb3 || Object.keys(injectedWindow.injectedWeb3).length === 0) {
+      throw new Error('No Substrate wallet found. Please install a compatible wallet like Talisman or SubWallet.');
     }
     return true;
   }
@@ -33,27 +32,17 @@ export class WalletService {
   static async getAccounts(): Promise<InjectedAccountWithMeta[]> {
     await this.checkWalletInstalled();
     
-    // First enable Talisman specifically
-    const extensions = await web3Enable('zkverify-remark');
-    const talisman = extensions.find((ext) => ext.name === 'talisman');
-
-    if (!talisman) {
-      throw new Error('Failed to connect to Talisman. Please unlock your wallet and try again.');
+    const extensions = await web3Enable('zkverify_teleport');
+    if (!extensions || extensions.length === 0) {
+      throw new Error('No wallet extension found, or permission was denied. Please unlock your wallet and try again.');
     }
 
-    // Get all accounts
     const allAccounts = await web3Accounts();
     if (allAccounts.length === 0) {
-      throw new Error('No accounts found in Talisman. Please create or import an account.');
+      throw new Error('No accounts found. Please create or import an account in your wallet.');
     }
 
-    // Filter for Talisman accounts only
-    const talismanAccounts = allAccounts.filter(acc => acc.meta.source === 'talisman');
-    if (talismanAccounts.length === 0) {
-      throw new Error('No Talisman accounts found. Please create or import an account in Talisman.');
-    }
-
-    return talismanAccounts;
+    return allAccounts;
   }
 
   static async getAccountBalance(address: string): Promise<string> {
@@ -73,11 +62,10 @@ export class WalletService {
     try {
       const api = await this.connectApi();
       
-      // Get the Talisman signer
-      const injector = await web3FromSource('talisman');
+      const injector = await web3FromSource(account.meta.source);
       
       if (!injector || !injector.signer) {
-        throw new Error('Talisman signer not found. Please make sure Talisman is unlocked.');
+        throw new Error('Wallet signer not found. Please make sure your wallet is unlocked.');
       }
 
       // Create the transaction
