@@ -35,10 +35,8 @@ export class TeleportService {
       // Convert to proper 32-byte format by padding with zeros at the start
       const paddedRecipient = '000000000000000000000000' + cleanRecipient;
 
-      // Clean and pad the token gateway address
+      // Clean the token gateway address, it should be a 20-byte address
       const cleanGateway = TOKEN_GATEWAY.toLowerCase().replace('0x', '');
-      // Convert to proper 32-byte format by padding with zeros at the start
-      const paddedGateway = '000000000000000000000000' + cleanGateway;
 
       // Create the teleport request object according to the chain's format
       const teleportRequest = {
@@ -46,10 +44,10 @@ export class TeleportService {
         destination: {
           Evm: params.chainId
         },
-        recipient: '0x' + paddedRecipient, // Pass as hex string
+        recepient: '0x' + paddedRecipient, // Pass as 32-byte hex string
         amount: params.amount,
         timeout: params.timeout,
-        token_gateway: '0x' + paddedGateway, // Pass as hex string
+        token_gateway: '0x' + cleanGateway, // Pass as 20-byte hex string
         relayer_fee: params.relayerFee,
         call_data: null, // Optional parameter required by the chain
         redeem: params.redeem

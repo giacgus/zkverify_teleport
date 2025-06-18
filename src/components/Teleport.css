@@ -272,7 +272,7 @@ body {
   padding: 0;
   border: none;
   color: #cdd6f4;
-  text-align: center;
+  text-align: left;
 }
 
 .tutorial-panel h2 {
@@ -318,6 +318,7 @@ a {
   cursor: pointer;
   font-size: 0.9rem;
   margin-top: 10px;
+  margin-left: 15px;
 }
 
 .link-button:hover {
