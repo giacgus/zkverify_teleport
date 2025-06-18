@@ -16,6 +16,7 @@ interface WalletState {
   zkVerify: {
     accounts: InjectedAccountWithMeta[];
     account: InjectedAccountWithMeta | null;
+    balance: string;
     isConnected: boolean;
     error: string;
   };
@@ -33,7 +34,7 @@ const WalletConnect: React.FC = () => {
   const [txHash, setTxHash] = useState<string>('');
   const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
   const [walletState, setWalletState] = useState<WalletState>({
-    zkVerify: { accounts: [], account: null, isConnected: false, error: '' },
+    zkVerify: { accounts: [], account: null, balance: '0', isConnected: false, error: '' },
     ethereum: { address: '', isConnected: false, error: '' },
   });
 
@@ -62,6 +63,31 @@ const WalletConnect: React.FC = () => {
     };
   }, [walletState.ethereum.isConnected]);
 
+  useEffect(() => {
+    if (walletState.zkVerify.account) {
+      WalletService.getAccountBalance(walletState.zkVerify.account.address).then(balance => {
+        setWalletState(prev => ({
+          ...prev,
+          zkVerify: { ...prev.zkVerify, balance }
+        }));
+      });
+    }
+  }, [walletState.zkVerify.account]);
+
+  const formatBalance = (balance: string) => {
+    try {
+      const balanceBigInt = BigInt(balance);
+      const decimals = 18;
+      const integerPart = balanceBigInt / BigInt(10 ** decimals);
+      const fractionalPart = balanceBigInt % BigInt(10 ** decimals);
+      const fractionalString = fractionalPart.toString().padStart(decimals, '0').substring(0, 4);
+      return `${integerPart}.${fractionalString}`;
+    } catch (e) {
+      console.error("Could not format balance", e);
+      return "0.0000";
+    }
+  };
+
   const connectToZkVerify = async () => {
     setIsLoading(true);
     setStatus('');
@@ -72,6 +98,7 @@ const WalletConnect: React.FC = () => {
         setWalletState(prev => ({
           ...prev,
           zkVerify: {
+            ...prev.zkVerify,
             accounts: accounts,
             account: accounts[0],
             isConnected: true,
@@ -106,6 +133,7 @@ const WalletConnect: React.FC = () => {
         zkVerify: {
           accounts: [],
           account: null,
+          balance: '0',
           isConnected: false,
           error: '',
         }
@@ -140,6 +168,11 @@ const WalletConnect: React.FC = () => {
     const { zkVerify, ethereum } = walletState;
     if (!zkVerify.account || !ethereum.address || !amount) {
       setStatus('Please connect both wallets and enter an amount.');
+      return;
+    }
+
+    if (BigInt(TeleportService.formatAmount(amount)) > BigInt(zkVerify.balance)) {
+      setStatus('Amount exceeds your available balance.');
       return;
     }
 
@@ -247,18 +280,27 @@ const WalletConnect: React.FC = () => {
         {walletState.zkVerify.isConnected && walletState.ethereum.isConnected && (
           <div className="teleport-controls">
             <div className="form-group amount-group">
-              <label htmlFor="amount">Amount to Teleport</label>
-              <input
-                type="text"
-                id="amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.0"
-                pattern="[0-9]*\.?[0-9]*"
-              />
-              <span>tVFY</span>
+              <div className="form-group-header">
+                <label htmlFor="amount">Amount to Teleport</label>
+                <div className="balance-info">
+                  Balance: {formatBalance(walletState.zkVerify.balance)} tVFY
+                </div>
+              </div>
+              <div className="amount-input-wrapper">
+                <input
+                  type="text"
+                  id="amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.0"
+                  pattern="[0-9]*\.?[0-9]*"
+                />
+                <button onClick={() => setAmount(formatBalance(walletState.zkVerify.balance))} className="max-button">
+                  Max
+                </button>
+              </div>
             </div>
-            <button onClick={handleTeleport} disabled={isLoading} className="teleport-button">
+            <button onClick={handleTeleport} disabled={isLoading || !amount || BigInt(TeleportService.formatAmount(amount)) > BigInt(walletState.zkVerify.balance)} className="teleport-button">
               {isLoading ? 'Teleporting...' : 'Teleport'}
             </button>
           </div>
@@ -272,7 +314,7 @@ const WalletConnect: React.FC = () => {
                 <p>
                   Track on zkVerify:{' '}
                   <a
-                    href={`https://testnet.zkverify.io/extrinsics/${txHash}`}
+                    href={`https://zkverify-testnet.subscan.io/extrinsic/${txHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

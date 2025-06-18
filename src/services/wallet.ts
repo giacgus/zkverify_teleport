@@ -12,6 +12,7 @@ export class WalletService {
       try {
         const provider = new WsProvider(ZKVERIFY_WS_ENDPOINT);
         this.api = await ApiPromise.create({ provider });
+        await this.api.isReady; // Wait for the API to be fully initialized
       } catch (error) {
         console.error('Failed to connect to chain:', error);
         throw new Error('Failed to connect to zkVerify chain. Please check if the node is running.');
@@ -53,6 +54,17 @@ export class WalletService {
     }
 
     return talismanAccounts;
+  }
+
+  static async getAccountBalance(address: string): Promise<string> {
+    const api = await this.connectApi();
+    try {
+      const accountInfo = await api.query.system.account(address) as any;
+      return accountInfo.data.free.toString();
+    } catch (error) {
+      console.error('Failed to fetch balance:', error);
+      return '0';
+    }
   }
 
   static async sendRemark(account: InjectedAccountWithMeta, remark: string): Promise<string> {

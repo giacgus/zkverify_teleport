@@ -358,4 +358,46 @@ a {
   font-size: 2rem;
   cursor: pointer;
   line-height: 1;
+}
+
+.form-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.balance-info {
+  font-size: 0.9rem;
+  color: #a6adc8;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.amount-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.amount-input-wrapper input {
+  padding-right: 55px; /* Make space for the Max button */
+}
+
+.max-button {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #585b70;
+  color: #cdd6f4;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.max-button:hover {
+  background-color: #6c7086;
 } 
