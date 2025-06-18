@@ -31,6 +31,7 @@ const WalletConnect: React.FC = () => {
   const [status, setStatus] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [txHash, setTxHash] = useState<string>('');
+  const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
   const [walletState, setWalletState] = useState<WalletState>({
     zkVerify: { accounts: [], account: null, isConnected: false, error: '' },
     ethereum: { address: '', isConnected: false, error: '' },
@@ -214,6 +215,11 @@ const WalletConnect: React.FC = () => {
               <button onClick={() => handleDisconnect(type)} className="disconnect-button-small">
                 Disconnect
               </button>
+              {type === 'ethereum' && (
+                <button onClick={() => setIsTutorialOpen(true)} className="link-button">
+                  How to see tVFY on MetaMask?
+                </button>
+              )}
             </div>
           ) : (
             <button onClick={connectFn} disabled={isLoading} className="connect-button">
@@ -227,45 +233,92 @@ const WalletConnect: React.FC = () => {
   };
 
   return (
-    <div className="bridge-container">
-      <h1>zkVerify Teleporter</h1>
-      <div className="bridge-main">
-        {renderWalletPanel('zkVerify', 'zkVerify', <img src={zkVerifyLogo} alt="zkVerify Logo" className="logo-img" />, walletState.zkVerify, connectToZkVerify)}
-        
-        <div className="bridge-arrow">→</div>
+    <div className="teleporter-layout">
+      <div className="bridge-container">
+        <h1>zkVerify Teleporter</h1>
+        <div className="bridge-main">
+          {renderWalletPanel('zkVerify', 'zkVerify', <img src={zkVerifyLogo} alt="zkVerify Logo" className="logo-img" />, walletState.zkVerify, connectToZkVerify)}
+          
+          <div className="bridge-arrow">→</div>
 
-        {renderWalletPanel('ethereum', 'Ethereum Sepolia', <EthereumLogo />, walletState.ethereum, connectToEthereum)}
-      </div>
-
-      {walletState.zkVerify.isConnected && walletState.ethereum.isConnected && (
-        <div className="teleport-controls">
-          <div className="form-group amount-group">
-            <label htmlFor="amount">Amount to Teleport</label>
-            <input
-              type="text"
-              id="amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.0"
-              pattern="[0-9]*\.?[0-9]*"
-              required
-            />
-            <span>tVFY</span>
-          </div>
-          <button onClick={handleTeleport} disabled={isLoading || !amount} className="teleport-button">
-            {isLoading ? 'Processing...' : 'Teleport'}
-          </button>
+          {renderWalletPanel('ethereum', 'Ethereum Sepolia', <EthereumLogo />, walletState.ethereum, connectToEthereum)}
         </div>
-      )}
 
-      {(status || txHash) && (
-        <div className="status-section">
-          <p>{status}</p>
-          {txHash && (
-            <a href={`https://zkverify-testnet.subscan.io/extrinsic/${txHash}`} target="_blank" rel="noopener noreferrer">
-              View Transaction
-            </a>
-          )}
+        {walletState.zkVerify.isConnected && walletState.ethereum.isConnected && (
+          <div className="teleport-controls">
+            <div className="form-group amount-group">
+              <label htmlFor="amount">Amount to Teleport</label>
+              <input
+                type="text"
+                id="amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.0"
+                pattern="[0-9]*\.?[0-9]*"
+              />
+              <span>tVFY</span>
+            </div>
+            <button onClick={handleTeleport} disabled={isLoading} className="teleport-button">
+              {isLoading ? 'Teleporting...' : 'Teleport'}
+            </button>
+          </div>
+        )}
+
+        {status && (
+          <div className="status-message">
+            <p>{status}</p>
+            {txHash && (
+              <>
+                <p>
+                  Track on zkVerify:{' '}
+                  <a
+                    href={`https://testnet.zkverify.io/extrinsics/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {txHash.slice(0, 8)}...{txHash.slice(-8)}
+                  </a>
+                </p>
+                <p>
+                  Your balance will be visible on Sepolia within 10 minutes.
+                  <br />
+                  View the token on{' '}
+                  <a
+                    href="https://sepolia.etherscan.io/token/0x22d10f789847833607a28769cedd2778ebfba429"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Etherscan
+                  </a>
+                  .
+                </p>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+      {isTutorialOpen && (
+        <div className="tutorial-modal-backdrop" onClick={() => setIsTutorialOpen(false)}>
+          <div className="tutorial-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setIsTutorialOpen(false)} className="close-button">×</button>
+            <div className="tutorial-panel">
+              <h2>How to see your tVFY on MetaMask</h2>
+              <p>
+                To see your tVFY tokens in your MetaMask wallet after teleporting, you need to add it as a custom token.
+              </p>
+              <ol>
+                <li>Open MetaMask and make sure you are on the Sepolia testnet.</li>
+                <li>Click on "Import tokens".</li>
+                <li>
+                  Paste the following contract address in the "Token contract address" field:
+                  <br />
+                  <code>0x22d10f789847833607a28769cedd2778ebfba429</code>
+                </li>
+                <li>The token symbol and decimals should fill in automatically. If not, please enter <strong>tVFY</strong> as the symbol and <strong>18</strong> as the decimals.</li>
+                <li>Click "Add custom token" and then "Import tokens".</li>
+              </ol>
+            </div>
+          </div>
         </div>
       )}
     </div>

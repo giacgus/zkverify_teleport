@@ -36,9 +36,9 @@ export class TeleportService {
       const paddedRecipient = '000000000000000000000000' + cleanRecipient;
 
       // Clean and pad the token gateway address
-      const cleanGateway = TOKEN_GATEWAY.toLowerCase().replace('0x', '').padStart(40, '0');
-      // Pad to 64 bytes (128 characters)
-      const paddedGateway = cleanGateway.padStart(128, '0');
+      const cleanGateway = TOKEN_GATEWAY.toLowerCase().replace('0x', '');
+      // Convert to proper 32-byte format by padding with zeros at the start
+      const paddedGateway = '000000000000000000000000' + cleanGateway;
 
       // Create the teleport request object according to the chain's format
       const teleportRequest = {
@@ -46,20 +46,16 @@ export class TeleportService {
         destination: {
           Evm: params.chainId
         },
-        recepient: hexToU8a('0x' + paddedRecipient), // Convert to proper H256 format
+        recipient: '0x' + paddedRecipient, // Pass as hex string
         amount: params.amount,
         timeout: params.timeout,
-        token_gateway: hexToU8a('0x' + paddedGateway), // Convert padded address to 64 bytes
+        token_gateway: '0x' + paddedGateway, // Pass as hex string
         relayer_fee: params.relayerFee,
         call_data: null, // Optional parameter required by the chain
         redeem: params.redeem
       };
 
-      console.log('Teleport request:', {
-        ...teleportRequest,
-        recepient: '0x' + paddedRecipient,
-        token_gateway: '0x' + paddedGateway
-      });
+      console.log('Teleport request:', teleportRequest);
 
       // Create the transaction with a single object parameter
       const tx = api.tx.tokenGateway.teleport(teleportRequest);
