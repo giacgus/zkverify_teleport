@@ -552,7 +552,7 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
   background-color: #21262d;
   color: #c9d1d9;
   border: 1px solid #30363d;
@@ -566,6 +566,16 @@ a {
 .change-direction-button:hover {
   background-color: #30363d;
   border-color: #58a6ff;
+}
+
+.swap-chevron {
+  width: 32px;
+  height: 32px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.swap-chevron.rotate {
+  transform: rotate(180deg);
 }
 
 .change-direction-button .arrow {

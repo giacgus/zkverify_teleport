@@ -6,6 +6,7 @@ import { TeleportService, TeleportParams } from '../services/teleport';
 import './Teleport.css';
 import zkVerifyLogo from '../assets/zkverify_logo.png';
 import { ReactComponent as EthereumLogo } from '../assets/ethereum_logo.svg';
+import chevronIcon from '../assets/chevron.png';
 import { ethers } from 'ethers';
 
 // Sepolia testnet configuration
@@ -467,8 +468,8 @@ const WalletConnect: React.FC = () => {
           </div>
           <div className="direction-switcher">
             <button onClick={handleSwap} className="change-direction-button">
+              <img src={chevronIcon} alt="Swap" className={`swap-chevron ${direction === 'ethToZk' ? 'rotate' : ''}`} />
               <span>Swap Direction</span>
-              <span className={`arrow ${direction === 'ethToZk' ? 'right-to-left' : ''}`}>›</span>
             </button>
           </div>
           <div className={`chain-box ${direction === 'ethToZk' ? 'active' : ''}`}>
