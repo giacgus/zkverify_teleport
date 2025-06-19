@@ -6,6 +6,9 @@ import { TeleportService, TeleportParams } from '../services/teleport';
 import './Teleport.css';
 import zkVerifyLogo from '../assets/zkverify_logo.png';
 import { ReactComponent as EthereumLogo } from '../assets/ethereum_logo.svg';
+import { ReactComponent as LoadingIcon } from '../assets/loading_icon.svg';
+import { ReactComponent as SuccessIcon } from '../assets/success_icon.svg';
+import { ReactComponent as ErrorIcon } from '../assets/error_icon.svg';
 import chevronIcon from '../assets/chevron.png';
 import { ethers } from 'ethers';
 
@@ -32,11 +35,15 @@ interface WalletState {
   };
 }
 
+type ModalStatus = 'idle' | 'loading' | 'success' | 'error';
+
 const WalletConnect: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [status, setStatus] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [modalMessage, setModalMessage] = useState<React.ReactNode>('');
+  const [modalTxHash, setModalTxHash] = useState<string>('');
+  const [modalStatus, setModalStatus] = useState<ModalStatus>('idle');
   const [amount, setAmount] = useState<string>('');
-  const [txHash, setTxHash] = useState<string>('');
   const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
   const [isZkVerifyHelpOpen, setIsZkVerifyHelpOpen] = useState<boolean>(false);
   const [direction, setDirection] = useState<'zkToEth' | 'ethToZk'>('zkToEth');
@@ -102,7 +109,7 @@ const WalletConnect: React.FC = () => {
       EthereumService.getTVFYAllowance().then(setTvyfAllowance);
       EthereumService.getUSDHAllowance().then(setUsdhAllowance);
     }
-  }, [direction, walletState.ethereum.isConnected, walletState.ethereum.address, status]);
+  }, [direction, walletState.ethereum.isConnected, walletState.ethereum.address]);
 
   const testAmount = '0.00001'; // Hardcoded for debugging
 
@@ -122,7 +129,6 @@ const WalletConnect: React.FC = () => {
 
   const connectToZkVerify = async () => {
     setIsLoading(true);
-    setStatus('');
     try {
       await WalletService.checkWalletInstalled();
       const accounts = await WalletService.getAccounts();
@@ -147,7 +153,6 @@ const WalletConnect: React.FC = () => {
 
   const connectToEthereum = async () => {
     setIsLoading(true);
-    setStatus('');
     try {
       const address = await EthereumService.connectToSepolia();
       setWalletState(prev => ({ ...prev, ethereum: { ...prev.ethereum, address, isConnected: true, error: '' } }));
@@ -185,8 +190,9 @@ const WalletConnect: React.FC = () => {
         }
       }));
     }
-    setStatus('');
-    setTxHash('');
+    setModalMessage('');
+    setModalTxHash('');
+    setModalStatus('idle');
   };
 
   const handleZkVerifyAccountChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -202,74 +208,71 @@ const WalletConnect: React.FC = () => {
 
   const handleSwap = () => {
     setDirection(prev => (prev === 'zkToEth' ? 'ethToZk' : 'zkToEth'));
-    setStatus('');
-    setTxHash('');
+    setModalMessage('');
+    setModalTxHash('');
+    setModalStatus('idle');
     setAmount('');
   };
 
-  const handleApproveTvyf = async () => {
+  const handleApproval = async (
+    approvalFn: () => Promise<ethers.TransactionResponse>,
+    tokenName: string
+  ) => {
     setIsLoading(true);
-    setStatus('Requesting tVFY approval in your wallet...');
+    setModalMessage(`Requesting ${tokenName} approval in your wallet...`);
+    setModalStatus('loading');
+    setIsModalOpen(true);
+    setModalTxHash('');
+
     try {
-      const approvalHash = await EthereumService.approveTokenGateway();
-      setStatus(`tVFY Approval sent: ${approvalHash.slice(0, 6)}... Waiting for confirmation...`);
-      // The useEffect will handle re-fetching the allowance
+      const tx = await approvalFn();
+      setModalMessage(`Approval sent. Waiting for confirmation...`);
+      setModalTxHash(tx.hash);
+
+      await tx.wait(); // Wait for the transaction to be mined
+
+      setModalMessage(`${tokenName} successfully approved!`);
+      setModalStatus('success');
+      await Promise.all([
+          EthereumService.getTVFYAllowance().then(setTvyfAllowance),
+          EthereumService.getUSDHAllowance().then(setUsdhAllowance)
+      ]);
+
     } catch (error: any) {
-      console.error('Error approving token:', error);
-      setStatus(`Error: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleApproveUsdh = async () => {
-    setIsLoading(true);
-    setStatus('Requesting USD.H approval in your wallet...');
-    try {
-      const approvalHash = await EthereumService.approveUSDHGateway();
-      setStatus(`USD.H Approval sent: ${approvalHash.slice(0, 6)}... Waiting for confirmation...`);
-      // The useEffect will handle re-fetching the allowance
-    } catch (error: any) {
-      console.error('Error approving USD.H token:', error);
-      setStatus(`Error: ${error.message}`);
+      console.error(`Error approving ${tokenName}:`, error);
+      setModalMessage(`Error: ${error.message}`);
+      setModalStatus('error');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleApproveTvyf = () => handleApproval(EthereumService.approveTokenGateway, 'tVFY');
+  
+  const handleApproveUsdh = () => handleApproval(EthereumService.approveUSDHGateway, 'Fee Token (USD.H)');
+  
   const handleDrip = async () => {
     setIsLoading(true);
-    setStatus('Requesting USD.H from the faucet...');
+    setModalMessage('Requesting USD.H from the faucet...');
+    setModalStatus('loading');
+    setIsModalOpen(true);
+    setModalTxHash('');
     try {
-      const dripHash = await EthereumService.dripFromFaucet();
-      setStatus(`Faucet drip successful: ${dripHash.slice(0, 6)}... Waiting for balance to update...`);
+      const tx = await EthereumService.dripFromFaucet();
+      setModalMessage(`Faucet drip sent. Waiting for confirmation...`);
+      setModalTxHash(tx.hash);
+      
+      await tx.wait();
 
-      // Poll for the balance to be updated on-chain
-      const initialBalance = BigInt(walletState.ethereum.usdhBalance);
-      await new Promise<void>((resolve, reject) => {
-        const interval = setInterval(async () => {
-          try {
-            const newBalance = await EthereumService.getUSDHBalance(walletState.ethereum.address);
-            if (BigInt(newBalance) > initialBalance) {
-              setWalletState(prev => ({ ...prev, ethereum: { ...prev.ethereum, usdhBalance: newBalance } }));
-              clearInterval(interval);
-              setStatus('USD.H balance updated!');
-              resolve();
-            }
-          } catch (e) {
-            // Ignore errors and continue polling
-          }
-        }, 3000); // Poll every 3 seconds
-
-        // Add a timeout to prevent infinite polling
-        setTimeout(() => {
-          clearInterval(interval);
-          reject(new Error('Balance update confirmation timed out. Please refresh and try again.'));
-        }, 180000); // 3-minute timeout
-      });
+      const newBalance = await EthereumService.getUSDHBalance(walletState.ethereum.address);
+      setWalletState(prev => ({ ...prev, ethereum: { ...prev.ethereum, usdhBalance: newBalance } }));
+      
+      setModalMessage('USD.H balance updated!');
+      setModalStatus('success');
     } catch (error: any) {
       console.error('Error getting tokens from faucet:', error);
-      setStatus(`Error: ${error.message}`);
+      setModalMessage(`Error: ${error.message}`);
+      setModalStatus('error');
     } finally {
       setIsLoading(false);
     }
@@ -278,19 +281,21 @@ const WalletConnect: React.FC = () => {
   const handleTeleport = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
-    setStatus('Preparing teleport transaction...');
-    setTxHash('');
+    setModalMessage('Preparing teleport transaction...');
+    setModalTxHash('');
+    setModalStatus('loading');
+    setIsModalOpen(true);
 
     if (direction === 'zkToEth') {
       const { zkVerify, ethereum } = walletState;
       if (!zkVerify.account || !ethereum.address || !amount) {
-        setStatus('Please connect both wallets and enter an amount.');
+        setModalMessage('Please connect both wallets and enter an amount.');
         setIsLoading(false);
         return;
       }
 
       if (ethers.parseEther(amount) > BigInt(zkVerify.balance)) {
-        setStatus('Amount exceeds your available balance.');
+        setModalMessage('Amount exceeds your available balance.');
         setIsLoading(false);
         return;
       }
@@ -308,51 +313,55 @@ const WalletConnect: React.FC = () => {
           redeem: false,
         };
 
-        setStatus('Waiting for wallet signature...');
+        setModalMessage('Waiting for wallet signature...');
         const hash = await TeleportService.teleportToEvm(api, zkVerify.account, params);
-        setStatus('Teleport transaction submitted!');
-        setTxHash(hash);
+        setModalMessage('Teleport transaction submitted!');
+        setModalStatus('success');
+        setModalTxHash(hash);
         setAmount('');
       } catch (error: any) {
         console.error('Error teleporting tokens:', error);
-        setStatus(`Error: ${error.message}`);
+        setModalMessage(`Error: ${error.message}`);
+        setModalStatus('error');
       } finally {
-        setIsLoading(false);
+        // Keep modal open to show final status
       }
     } else { // ethToZk
       const { zkVerify, ethereum } = walletState;
       if (!zkVerify.account || !ethereum.address || !amount) {
-        setStatus('Please connect both wallets and enter an amount.');
+        setModalMessage('Please connect both wallets and enter an amount.');
         setIsLoading(false);
         return;
       }
 
       if (ethers.parseEther(amount) > BigInt(ethereum.balance)) {
-        setStatus('Amount exceeds your available tVFY balance.');
+        setModalMessage('Amount exceeds your available tVFY balance.');
         setIsLoading(false);
         return;
       }
 
       if (BigInt(walletState.ethereum.usdhBalance) < ethers.parseEther('1')) {
-        setStatus('You need at least 1 USD.H to pay for fees.');
+        setModalMessage('You need at least 1 USD.H to pay for fees.');
         setIsLoading(false);
         return;
       }
 
       try {
-        setStatus('Waiting for wallet signature...');
+        setModalMessage('Waiting for wallet signature...');
         const hash = await EthereumService.teleportToZkVerify({
           amount,
           recipient: zkVerify.account.address,
         });
-        setStatus('Teleport transaction submitted!');
-        setTxHash(hash);
+        setModalMessage('Teleport transaction submitted!');
+        setModalStatus('success');
+        setModalTxHash(hash);
         setAmount('');
       } catch (error: any) {
         console.error('Error teleporting to zkVerify:', error);
-        setStatus(`Error: ${error.message}`);
+        setModalMessage(`Error: ${error.message}`);
+        setModalStatus('error');
       } finally {
-        setIsLoading(false);
+        // Keep modal open to show final status
       }
     }
   };
@@ -571,44 +580,57 @@ const WalletConnect: React.FC = () => {
           </div>
         )}
 
-        {status && (
-          <div className="status-message">
-            <p>{status}</p>
-            {txHash && (
-              <>
-                <p>
-                  Track on {direction === 'zkToEth' ? 'zkVerify' : 'Sepolia'}:{' '}
-                  <a
-                    href={
-                      direction === 'zkToEth'
-                        ? `https://zkverify-testnet.subscan.io/extrinsic/${txHash}`
-                        : `https://sepolia.etherscan.io/tx/${txHash}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {txHash.slice(0, 8)}...{txHash.slice(-8)}
-                  </a>
-                </p>
-                <p>
-                  Your balance will be visible on {direction === 'zkToEth' ? 'Sepolia' : 'zkVerify'} within 10 minutes.
-                  <br />
-                  View the token on{' '}
-                  <a
-                    href={
-                      direction === 'zkToEth'
-                        ? "https://sepolia.etherscan.io/token/0x22d10f789847833607a28769cedd2778ebfba429"
-                        : "https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fvolta-rpc.zkverify.io#/explorer"
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Etherscan / Polkadot.js
-                  </a>
-                  .
-                </p>
-              </>
-            )}
+        {isModalOpen && (
+          <div className="status-modal-backdrop">
+            <div className="status-modal-content">
+              <div className="modal-icon">
+                {modalStatus === 'loading' && <LoadingIcon className="spinning" />}
+                {modalStatus === 'success' && <SuccessIcon />}
+                {modalStatus === 'error' && <ErrorIcon />}
+              </div>
+              <p>{modalMessage}</p>
+              {modalTxHash && (
+                <>
+                  <p>
+                    Track on {direction === 'zkToEth' ? 'zkVerify' : 'Sepolia'}:{' '}
+                    <a
+                      href={
+                        direction === 'zkToEth'
+                          ? `https://zkverify-testnet.subscan.io/extrinsic/${modalTxHash}`
+                          : `https://sepolia.etherscan.io/tx/${modalTxHash}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {modalTxHash.slice(0, 8)}...{modalTxHash.slice(-8)}
+                    </a>
+                  </p>
+                  {modalMessage && modalMessage.toString().toLowerCase().includes('submitted') && (
+                    <p className="final-message">
+                      Your balance will be visible on {direction === 'zkToEth' ? 'Sepolia' : 'zkVerify'} within {direction === 'zkToEth' ? '10' : '25'} minutes.
+                      <br/>
+                      {direction === 'zkToEth' ? (
+                        <>
+                          View the token on {' '}
+                          <a href="https://sepolia.etherscan.io/token/0x22d10f789847833607a28769cedd2778ebfba429" target="_blank" rel="noopener noreferrer">
+                            Etherscan
+                          </a>.
+                        </>
+                      ) : (
+                        <>
+                          Monitor the {' '}
+                          <a href="https://zkverify-testnet.subscan.io/account/xphg8cRoGsLp1Fe4LskP2D78hyLuERT8w6TauPyb6YLQXHuQ3" target="_blank" rel="noopener noreferrer">
+                            redistribution contract
+                          </a>
+                          {' '}on Subscan.
+                        </>
+                      )}
+                    </p>
+                  )}
+                </>
+              )}
+              <button onClick={() => {setIsModalOpen(false); setModalStatus('idle');}} className="link-button" style={{marginTop: '1rem'}}>Close</button>
+            </div>
           </div>
         )}
       </div>

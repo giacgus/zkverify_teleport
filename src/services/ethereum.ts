@@ -18,13 +18,13 @@ export interface TeleportToZkVerifyParams {
   recipient: string; // zkVerify address
 }
 
-export class EthereumService {
-  private static provider: ethers.BrowserProvider | null = null;
-  private static signer: ethers.JsonRpcSigner | null = null;
+let provider: ethers.BrowserProvider | null = null;
+let signer: ethers.JsonRpcSigner | null = null;
 
+export class EthereumService {
   static disconnect() {
-    this.provider = null;
-    this.signer = null;
+    provider = null;
+    signer = null;
   }
 
   static async checkMetaMaskInstalled(): Promise<boolean> {
@@ -44,11 +44,11 @@ export class EthereumService {
       const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
       
       // Create ethers provider and signer
-      this.provider = new ethers.BrowserProvider(ethereum);
-      this.signer = await this.provider.getSigner();
+      provider = new ethers.BrowserProvider(ethereum);
+      signer = await provider.getSigner();
 
       // Check if we're on Sepolia
-      const network = await this.provider.getNetwork();
+      const network = await provider.getNetwork();
       if (network.chainId !== BigInt(11155111)) { // Sepolia chainId
         try {
           // Try to switch to Sepolia
@@ -87,17 +87,17 @@ export class EthereumService {
   }
 
   static async getAddress(): Promise<string | null> {
-    if (!this.signer) return null;
-    return await this.signer.getAddress();
+    if (!signer) return null;
+    return await signer.getAddress();
   }
 
   static async sendTransaction(to: string, value: string): Promise<string> {
-    if (!this.signer) {
+    if (!signer) {
       throw new Error('Wallet not connected');
     }
 
     try {
-      const tx = await this.signer.sendTransaction({
+      const tx = await signer.sendTransaction({
         to,
         value: ethers.parseEther(value)
       });
@@ -110,12 +110,12 @@ export class EthereumService {
   }
 
   static async getTVFYBalance(address: string): Promise<string> {
-    if (!this.provider) {
+    if (!provider) {
       throw new Error('Wallet not connected');
     }
 
     try {
-      const tokenContract = new Contract(TVFY_TOKEN_ADDRESS, erc20Abi, this.provider);
+      const tokenContract = new Contract(TVFY_TOKEN_ADDRESS, erc20Abi, provider);
       const balance = await tokenContract.balanceOf(address);
       return balance.toString();
     } catch (error: any) {
@@ -125,59 +125,57 @@ export class EthereumService {
   }
 
   static async getUSDHBalance(address: string): Promise<string> {
-    if (!this.provider) {
+    if (!provider) {
       throw new Error('Wallet not connected');
     }
-    const tokenContract = new Contract(USDH_TOKEN_ADDRESS, erc20Abi, this.provider);
+    const tokenContract = new Contract(USDH_TOKEN_ADDRESS, erc20Abi, provider);
     const balance = await tokenContract.balanceOf(address);
     return balance.toString();
   }
 
   static async getTVFYAllowance(): Promise<string> {
-    if (!this.provider || !this.signer) {
+    if (!provider || !signer) {
       throw new Error('Wallet not connected');
     }
-    const userAddress = await this.signer.getAddress();
-    const tokenContract = new Contract(TVFY_TOKEN_ADDRESS, erc20Abi, this.provider);
+    const userAddress = await signer.getAddress();
+    const tokenContract = new Contract(TVFY_TOKEN_ADDRESS, erc20Abi, provider);
     const allowance = await tokenContract.allowance(userAddress, TOKEN_GATEWAY_ADDRESS);
     return allowance.toString();
   }
 
   static async getUSDHAllowance(): Promise<string> {
-    if (!this.provider || !this.signer) {
+    if (!provider || !signer) {
       throw new Error('Wallet not connected');
     }
-    const userAddress = await this.signer.getAddress();
-    const tokenContract = new Contract(USDH_TOKEN_ADDRESS, erc20Abi, this.provider);
+    const userAddress = await signer.getAddress();
+    const tokenContract = new Contract(USDH_TOKEN_ADDRESS, erc20Abi, provider);
     const allowance = await tokenContract.allowance(userAddress, TOKEN_GATEWAY_ADDRESS);
     return allowance.toString();
   }
 
-  static async approveTokenGateway(): Promise<string> {
-    if (!this.signer) {
+  static async approveTokenGateway(): Promise<ethers.TransactionResponse> {
+    if (!signer) {
       throw new Error('Wallet not connected');
     }
 
     try {
-      const tokenContract = new Contract(TVFY_TOKEN_ADDRESS, erc20Abi, this.signer);
+      const tokenContract = new Contract(TVFY_TOKEN_ADDRESS, erc20Abi, signer);
       const tx = await tokenContract.approve(TOKEN_GATEWAY_ADDRESS, ethers.MaxUint256);
-      await tx.wait(); // wait for transaction to be mined
-      return tx.hash;
+      return tx;
     } catch (error: any) {
       console.error('Error approving token:', error);
       throw new Error(error.message || 'Failed to approve token');
     }
   }
 
-  static async approveUSDHGateway(): Promise<string> {
-    if (!this.signer) {
+  static async approveUSDHGateway(): Promise<ethers.TransactionResponse> {
+    if (!signer) {
       throw new Error('Wallet not connected');
     }
     try {
-      const tokenContract = new Contract(USDH_TOKEN_ADDRESS, erc20Abi, this.signer);
+      const tokenContract = new Contract(USDH_TOKEN_ADDRESS, erc20Abi, signer);
       const tx = await tokenContract.approve(TOKEN_GATEWAY_ADDRESS, ethers.MaxUint256);
-      await tx.wait(); // wait for transaction to be mined
-      return tx.hash;
+      return tx;
     } catch (error: any) {
       console.error('Error approving USD.H token:', error);
       throw new Error(error.message || 'Failed to approve USD.H token');
@@ -185,11 +183,11 @@ export class EthereumService {
   }
 
   static async getEthBalance(address: string): Promise<string> {
-    if (!this.provider) {
+    if (!provider) {
       throw new Error('Wallet not connected');
     }
     try {
-      const balance = await this.provider.getBalance(address);
+      const balance = await provider.getBalance(address);
       return balance.toString();
     } catch (error: any) {
       console.error('Error fetching ETH balance:', error);
@@ -197,15 +195,14 @@ export class EthereumService {
     }
   }
 
-  static async dripFromFaucet(): Promise<string> {
-    if (!this.signer) {
+  static async dripFromFaucet(): Promise<ethers.TransactionResponse> {
+    if (!signer) {
       throw new Error('Wallet not connected');
     }
     try {
-      const faucetContract = new Contract(FAUCET_ADDRESS, faucetAbi, this.signer);
+      const faucetContract = new Contract(FAUCET_ADDRESS, faucetAbi, signer);
       const tx = await faucetContract.drip(USDH_TOKEN_ADDRESS);
-      await tx.wait(); // wait for transaction to be mined
-      return tx.hash;
+      return tx;
     } catch (error: any) {
       console.error('Error getting tokens from faucet:', error);
       throw new Error(error.message || 'Failed to get tokens from faucet');
@@ -213,12 +210,12 @@ export class EthereumService {
   }
 
   static async teleportToZkVerify(params: TeleportToZkVerifyParams): Promise<string> {
-    if (!this.signer) {
+    if (!signer) {
       throw new Error('Wallet not connected');
     }
 
     try {
-      const tokenGateway = new Contract(TOKEN_GATEWAY_ADDRESS, tokenGatewayAbi, this.signer);
+      const tokenGateway = new Contract(TOKEN_GATEWAY_ADDRESS, tokenGatewayAbi, signer);
 
       const recipientU8a = decodeAddress(params.recipient);
       const recipientHex = zeroPad(hexlify(recipientU8a), 32);
