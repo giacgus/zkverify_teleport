@@ -552,7 +552,12 @@ const WalletConnect: React.FC = () => {
                   type="text"
                   id="amount"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/,/g, '.');
+                    if (/^[0-9]*\.?[0-9]*$/.test(value)) {
+                      setAmount(value);
+                    }
+                  }}
                   placeholder="0.0"
                   pattern="[0-9]*\.?[0-9]*"
                 />
