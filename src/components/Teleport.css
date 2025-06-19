@@ -7,6 +7,33 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.teleporter-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.teleporter-header h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #f0f6fc;
+}
+
+.help-section {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  padding-top: 0;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #30363d;
+}
+
+.help-section .link-button {
+  color: #58a6ff;
+  font-size: 0.9rem;
+}
+
 /* Bridge Container */
 .bridge-container {
   max-width: 850px;
@@ -15,6 +42,9 @@ body {
   background: #21262d;
   border-radius: 16px;
   border: 1px solid #30363d;
+  align-items: stretch; /* Make panels equal height */
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .bridge-container h1 {
@@ -26,12 +56,25 @@ body {
 }
 
 /* Bridge Main Layout */
-.bridge-main {
+.bridge-flow-selector {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch; /* Make panels equal height */
   gap: 1.5rem;
   margin-bottom: 2.5rem;
+}
+
+.chain-box {
+  flex: 1;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 4px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
+}
+
+.chain-box.active {
+  border-color: #58a6ff;
 }
 
 .bridge-panel {
@@ -131,6 +174,12 @@ body {
 .bridge-arrow {
   font-size: 2.5rem;
   color: #8b949e;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.bridge-arrow:hover {
+  transform: rotate(180deg);
 }
 
 /* Teleport Controls */
@@ -247,8 +296,12 @@ body {
     margin: 1rem;
     padding: 1.5rem;
   }
-  .bridge-main {
+  .bridge-flow-selector {
     flex-direction: column;
+  }
+  .direction-switcher {
+    margin: 1rem 0;
+    transform: none; /* Reset rotation for column layout */
   }
   .bridge-arrow {
     transform: rotate(90deg);
@@ -405,4 +458,123 @@ a {
 
 .max-button:hover {
   background-color: #6c7086;
+}
+
+.fee-info-panel {
+  background: #0d1117;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #30363d;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.fee-info-panel h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: #f0f6fc;
+}
+
+.fee-info-panel p {
+  margin-bottom: 1rem;
+  color: #8b949e;
+}
+
+.fee-info-panel .balance-info {
+  margin-bottom: 1rem;
+}
+
+.fee-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.requirement-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #30363d;
+}
+
+.requirement-row:last-child {
+  border-bottom: none;
+}
+
+.requirement-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.token-name {
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+.balance-display {
+  font-size: 0.85rem;
+  color: #8b949e;
+}
+
+.requirement-action .success-text {
+  font-size: 0.9rem;
+}
+
+.requirement-action .link-button {
+  font-size: 0.9rem;
+}
+
+.checkmark {
+  color: #238636;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.success-text {
+  color: #238636;
+  font-weight: bold;
+}
+
+.direction-switcher {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.change-direction-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.change-direction-button:hover {
+  background-color: #30363d;
+  border-color: #58a6ff;
+}
+
+.change-direction-button .arrow {
+  font-size: 3rem;
+  line-height: 1;
+  color: #58a6ff;
+  transition: transform 0.3s ease-in-out;
+}
+
+.change-direction-button .arrow.right-to-left {
+  transform: rotate(180deg);
 } 
