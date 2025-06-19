@@ -458,9 +458,6 @@ const WalletConnect: React.FC = () => {
 
   return (
     <div className="teleporter-layout">
-      <div className="teleporter-header">
-        <h1>zkVerify Teleporter</h1>
-      </div>
       <div className="bridge-container">
         <div className="help-section">
           <button onClick={() => setIsZkVerifyHelpOpen(true)} className="link-button">
@@ -539,9 +536,12 @@ const WalletConnect: React.FC = () => {
                 {hasEnoughFee ? (
                   <span className="success-text">✓ Sufficient</span>
                 ) : (
-                  <button onClick={handleDrip} disabled={isLoading} className="link-button">
-                    Get from Faucet
-                  </button>
+                  <div className="action-with-icon">
+                    <ErrorIcon />
+                    <button onClick={handleDrip} disabled={isLoading} className="link-button">
+                      Get from Faucet
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
