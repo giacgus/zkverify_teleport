@@ -212,6 +212,8 @@ const WalletConnect: React.FC = () => {
     setModalTxHash('');
     setModalStatus('idle');
     setAmount('');
+    setTvyfAllowance('0');
+    setUsdhAllowance('0');
   };
 
   const handleApproval = async (
@@ -324,7 +326,7 @@ const WalletConnect: React.FC = () => {
         setModalMessage(`Error: ${error.message}`);
         setModalStatus('error');
       } finally {
-        // Keep modal open to show final status
+        setIsLoading(false);
       }
     } else { // ethToZk
       const { zkVerify, ethereum } = walletState;
@@ -361,7 +363,7 @@ const WalletConnect: React.FC = () => {
         setModalMessage(`Error: ${error.message}`);
         setModalStatus('error');
       } finally {
-        // Keep modal open to show final status
+        setIsLoading(false);
       }
     }
   };
