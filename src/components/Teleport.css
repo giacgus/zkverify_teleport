@@ -7,14 +7,31 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.help-section {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #30363d;
+}
+
+.help-section .link-button {
+  color: #58a6ff;
+  font-size: 0.9rem;
+}
+
 /* Bridge Container */
 .bridge-container {
-  max-width: 850px;
-  margin: 3rem auto;
-  padding: 2.5rem;
+  max-width: 950px;
+  margin: 1rem auto;
+  padding: 1.5rem;
   background: #21262d;
   border-radius: 16px;
   border: 1px solid #30363d;
+  align-items: stretch; /* Make panels equal height */
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .bridge-container h1 {
@@ -26,21 +43,34 @@ body {
 }
 
 /* Bridge Main Layout */
-.bridge-main {
+.bridge-flow-selector {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch; /* Make panels equal height */
   gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.chain-box {
+  flex: 1;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 4px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
+}
+
+.chain-box.active {
+  border-color: #58a6ff;
 }
 
 .bridge-panel {
   flex: 1;
   background: #0d1117;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   border: 1px solid #30363d;
-  min-height: 180px;
+  min-height: 160px;
   display: flex;
   flex-direction: column;
 }
@@ -48,19 +78,19 @@ body {
 .panel-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding-bottom: 1rem;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid #30363d;
 }
 
 .panel-header svg,
 .panel-header .logo-img {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
 }
 
 .panel-header span {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 600;
 }
 
@@ -86,10 +116,10 @@ body {
 .address-display {
   background: #161b22;
   border-radius: 6px;
-  padding: 0.75rem;
+  padding: 0.5rem;
   font-family: 'SF Mono', 'Consolas', 'Roboto Mono', monospace;
   font-size: 0.9rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   word-break: break-all;
   border: 1px solid #30363d;
 }
@@ -118,9 +148,9 @@ body {
   color: #c9d1d9;
   border: 1px solid #30363d;
   border-radius: 6px;
-  padding: 0.75rem;
+  padding: 0.5rem;
   font-family: 'SF Mono', 'Consolas', 'Roboto Mono', monospace;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 .account-select:focus {
   outline: none;
@@ -131,13 +161,19 @@ body {
 .bridge-arrow {
   font-size: 2.5rem;
   color: #8b949e;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.bridge-arrow:hover {
+  transform: rotate(180deg);
 }
 
 /* Teleport Controls */
 .teleport-controls {
   background: #0d1117;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   border: 1px solid #30363d;
 }
 
@@ -147,8 +183,8 @@ body {
   background: #161b22;
   border: 1px solid #30363d;
   border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1.5rem;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
 }
 
 .amount-group label {
@@ -162,7 +198,7 @@ body {
   background: transparent;
   border: none;
   color: #f0f6fc;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 600;
   text-align: right;
   outline: none;
@@ -177,8 +213,8 @@ body {
 
 .teleport-button {
   width: 100%;
-  padding: 1rem;
-  font-size: 1.2rem;
+  padding: 0.8rem;
+  font-size: 1.1rem;
   font-weight: 600;
   background-color: #238636;
   color: white;
@@ -199,33 +235,9 @@ body {
   cursor: not-allowed;
 }
 
-/* Status & Errors */
-.status-section {
-  text-align: center;
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: #161b22;
-  border-radius: 12px;
-  border: 1px solid #30363d;
-}
-.status-section p {
-  margin: 10px 0;
-  font-size: 0.9rem;
-  color: #cdd6f4;
-}
-.status-section a {
-  color: #89b4fa;
-  text-decoration: none;
-  font-weight: bold;
-}
-.status-section a:hover {
-  text-decoration: underline;
-}
-
 .panel-error {
-  font-size: 0.8rem;
   color: #f85149;
-  text-align: center;
+  font-size: 0.9rem;
   margin-top: 1rem;
 }
 
@@ -247,8 +259,12 @@ body {
     margin: 1rem;
     padding: 1.5rem;
   }
-  .bridge-main {
+  .bridge-flow-selector {
     flex-direction: column;
+  }
+  .direction-switcher {
+    margin: 1rem 0;
+    transform: none; /* Reset rotation for column layout */
   }
   .bridge-arrow {
     transform: rotate(90deg);
@@ -404,5 +420,220 @@ a {
 }
 
 .max-button:hover {
-  background-color: #6c7086;
+  background: #21262d;
+}
+
+.fee-info-panel {
+  background: #0d1117;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid #30363d;
+  margin-bottom: 1.5rem;
+}
+
+.fee-info-panel h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.fee-info-panel p {
+  font-size: 0.9rem;
+  color: #8b949e;
+  margin: 0;
+}
+
+.fee-info-panel .balance-info {
+  font-size: 0.8rem;
+  color: #8b949e;
+}
+
+.fee-header {
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #30363d;
+}
+
+.requirement-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #30363d;
+}
+
+.requirement-row:last-child {
+  border-bottom: none;
+}
+
+.requirement-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.token-name {
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+.balance-display {
+  font-size: 0.85rem;
+  color: #8b949e;
+}
+
+.requirement-action .success-text {
+  font-size: 0.9rem;
+}
+
+.requirement-action .link-button {
+  margin-left: 0.5rem;
+}
+
+.action-with-icon {
+  display: flex;
+  align-items: center;
+}
+
+.action-with-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: #f85149;
+}
+
+.checkmark {
+  color: #2ea043;
+  font-weight: bold;
+}
+
+.success-text {
+  color: #238636;
+  font-weight: bold;
+}
+
+.direction-switcher {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.change-direction-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.change-direction-button:hover {
+  background-color: #30363d;
+  border-color: #58a6ff;
+}
+
+.swap-chevron {
+  width: 32px;
+  height: 32px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.swap-chevron.rotate {
+  transform: rotate(180deg);
+}
+
+.change-direction-button .arrow {
+  font-size: 3rem;
+  line-height: 1;
+  color: #58a6ff;
+  transition: transform 0.3s ease-in-out;
+}
+
+.change-direction-button .arrow.right-to-left {
+  transform: rotate(180deg);
+}
+
+.teleporter-layout h1 {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.status-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.status-modal-content {
+  background-color: #2c2c3e;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #4a4a69;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+}
+
+.status-modal-content p {
+  margin-bottom: 1rem;
+  word-wrap: break-word;
+}
+
+.status-modal-content .final-message {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-top: 1.5rem;
+}
+
+.status-modal-content a {
+  color: #61dafb;
+  text-decoration: none;
+}
+
+.status-modal-content a:hover {
+  text-decoration: underline;
+}
+
+.modal-icon {
+  margin-bottom: 1rem;
+}
+
+.modal-icon svg {
+  width: 50px;
+  height: 50px;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.teleport-controls {
+  margin-top: 2rem;
+  padding: 2rem;
 } 
