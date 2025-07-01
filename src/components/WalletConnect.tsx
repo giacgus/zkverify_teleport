@@ -12,6 +12,8 @@ import { ReactComponent as ErrorIcon } from '../assets/error_icon.svg';
 import chevronIcon from '../assets/chevron.png';
 import { ethers } from 'ethers';
 
+const TIMEOUT = 3600;
+
 // Sepolia testnet configuration
 const SEPOLIA_CONFIG = {
   chainId: 11155111,
@@ -310,7 +312,7 @@ const WalletConnect: React.FC = () => {
           chainId: SEPOLIA_CONFIG.chainId,
           recipient: ethereum.address,
           amount: ethers.parseEther(amount).toString(),
-          timeout: 0,
+          timeout: TIMEOUT,
           relayerFee: '0',
           redeem: false,
         };
