@@ -12,6 +12,7 @@ const USDH_TOKEN_ADDRESS = '0xA801da100bF16D07F668F4A49E1f71fc54D05177';
 const FAUCET_ADDRESS = '0x1794aB22388303ce9Cb798bE966eeEBeFe59C3a3';
 const TVFY_ASSET_ID = '0xbce67a4632d733ff3d4599502fc9c8812688ce39220e4304bd7b43c22ae5c77c';
 const ZKVERIFY_DEST_BYTES = '0x5355425354524154452d7a6b765f'; // "SUBSTRATE-zkv_"
+const TIMEOUT = 3600;
 
 export interface TeleportToZkVerifyParams {
   amount: string;
@@ -227,7 +228,7 @@ export class EthereumService {
         false, // redeem
         recipientHex,
         ZKVERIFY_DEST_BYTES,
-        0, // timeout
+        TIMEOUT, // timeout
         0, // nativeCost
         '0x', // data
       ];
